@@ -1,0 +1,15 @@
+08:42:08 class tybca_a rollno 2205820 entered the class
+08:42:08 Total number of students in class: 1
+09:42:33 class tybca_a rollno 2205820 exited the class
+09:42:33 Total number of students in class: 0
+12:40:08 class tybca_a rollno 2205820 entered the class
+12:40:08 Total number of students in class: 1
+19:42:33 class tybca_a rollno 2205820 exited the class
+19:42:33 Total number of students in class: 0
+08:42:41 class tybca_a rollno 2205825 entered the class
+08:42:41 Total number of students in class: 1
+08:42:57 class tybca_a rollno 2205838 entered the class
+08:42:57 class tybca_a rollno 2205825 exited the class
+08:42:57 Total number of students in class: 1
+18:43:13 class tybca_a rollno 2205838 exited the class
+18:43:13 Total number of students in class: 0

@@ -1,0 +1,70 @@
+import mysql.connector
+import datetime
+import re
+
+def get_current_weekday():
+    return datetime.datetime.today().strftime('%A').lower() + 'timetable'
+
+def parse_serial_output(filename):
+    student_times = {}
+    with open(filename, 'r') as file:
+        for line in file:
+            match = re.search(r'\[(.*?)\] rollno (\d+) (entered|exited) the class', line)
+            if match:
+                timestamp, rollno, action = match.groups()
+                timestamp = datetime.datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                if rollno not in student_times:
+                    student_times[rollno] = []
+                student_times[rollno].append((action, timestamp))
+    return student_times
+
+def update_attendance_in_db(student_times):
+    conn = mysql.connector.connect(host='localhost', user='root', password='', database='students')
+    cursor = conn.cursor()
+    
+    table_name = get_current_weekday()
+    cursor.execute(f"SELECT rollno, subject_name, time FROM {table_name}")
+    lectures = cursor.fetchall()
+    
+    for rollno, subject, time_range in lectures:
+        start_time_str, end_time_str = time_range.split(' - ')
+        start_time = datetime.datetime.strptime(start_time_str, '%H:%M').time()
+        end_time = datetime.datetime.strptime(end_time_str, '%H:%M').time()
+        
+        if str(rollno) in student_times:
+            records = student_times[str(rollno)]
+            entry_time, exit_time = None, None
+            
+            for action, timestamp in records:
+                if action == 'entered' and timestamp.time() <= end_time:
+                    entry_time = timestamp.time()
+                if action == 'exited' and timestamp.time() >= start_time:
+                    exit_time = timestamp.time()
+            
+            if entry_time and exit_time:
+                total_time_spent = (datetime.datetime.combine(datetime.date.today(), exit_time) -
+                                    datetime.datetime.combine(datetime.date.today(), entry_time)).seconds / 60
+                lecture_duration = (datetime.datetime.combine(datetime.date.today(), end_time) -
+                                    datetime.datetime.combine(datetime.date.today(), start_time)).seconds / 60
+                
+                attendance_status = 'Present' if total_time_spent >= (lecture_duration * 0.5) else 'Absent'
+            else:
+                attendance_status = 'Absent'
+            
+            cursor.execute(f"""
+                UPDATE {table_name} 
+                SET attendance = %s 
+                WHERE rollno = %s AND subject_name = %s
+            """, (attendance_status, rollno, subject))
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+def main():
+    student_times = parse_serial_output('serial_output.txt')
+    update_attendance_in_db(student_times)
+    print("Attendance updated successfully.")
+
+if __name__ == "__main__":
+    main()
